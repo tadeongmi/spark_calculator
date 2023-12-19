@@ -7,12 +7,12 @@ import streamlit as st
 # collateral needed (vs max borrow)
 # simulation (e.g. if you opened the position last month, would you have been liquidatied?)
 # fee (need to also add loan duration)
-# use cases(lending arbitrage w/ expected breakeven, long/short/token farming)
+# use cases(lending arbitrage w/ expected breakeven, long/short/token farming, for looping need "x5" instead of max ltv)
 # add sdai yield
 
 # Set page configuration
 st.set_page_config(
-    page_title='Spark Calculator',
+    page_title='SparkLend Calculator',
     page_icon='spark_logo.svg',
     layout='wide',
     initial_sidebar_state='collapsed'
@@ -57,7 +57,6 @@ def max_borrowable_amount(df,selected_network,selected_collateral,amount_collate
 
 
 # utils
-
 def pretty_percent(percent):
     formatted_string = '{:,.2f}%'.format(percent * 100)
     return formatted_string
@@ -88,7 +87,7 @@ def pretty_usd(df,selected_amount,selected_asset):
 
 # frontend
 def home():
-    st.title('⚡️ SparkLend Calculator ⚡️')
+    st.title('SparkLend Calculator')
     
     col01, col02 = st.columns([3,1])
     with col01:
