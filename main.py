@@ -87,10 +87,17 @@ def pretty_usd(df,selected_amount,selected_asset):
 # frontend
 def home():
     st.title('⚡️ SparkLend Calculator ⚡️')
-    st.caption('A simple calculator to know liquidation price and maximum borrowable amount.')
     
+    col01, col02 = st.columns([3,1])
+    with col01:
+        st.caption('A simple calculator to know liquidation price and maximum borrowable amount.')
+
+    with col02:
+        st.caption('data updated on 19th Dec 2023')
+
+    st.write("") # space
+        
     df = get_market_data()
-    #st.write(df)
 
     selected_network = st.selectbox('select network', available_markets(df))
 
