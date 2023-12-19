@@ -7,6 +7,8 @@ import streamlit as st
 # collateral needed (vs max borrow)
 # simulation (e.g. if you opened the position last month, would you have been liquidatied?)
 # fee (need to also add loan duration)
+# use cases(lending arbitrage w/ expected breakeven, long/short/token farming)
+# add sdai yield
 
 # Set page configuration
 st.set_page_config(
@@ -96,7 +98,7 @@ def home():
         st.caption('data updated on 19th Dec 2023')
 
     st.write("") # space
-        
+
     df = get_market_data()
 
     selected_network = st.selectbox('select network', available_markets(df))
