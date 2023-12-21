@@ -2,7 +2,11 @@ import streamlit as st
 import pandas as pd
 
 # TODO:
-# - [ ] add a file uploader for Safe
+# - [ ] add a file uploader for common file formats (maybe Safe or Etherscan?)
+# - [ ] get dsr rate from api
+# - [ ] add amounts in sDAI
+# - [ ] add breakeven calculation
+
 
 st.set_page_config(
     page_title='sDAI Calculator',
