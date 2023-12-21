@@ -9,14 +9,14 @@ st.set_page_config(
 
 def app():
     st.title('⚡️ Welcome to Sparkie ⚡️')
-    st.write('Sparkie is a set of tools to help you using SparkLend and sDAI.')
+    st.write('Sparkie is a companion set of tools to help you use SparkLend and sDAI.')
 
     st.write('''
              There are two tools available 
              - SparkLend Calculator: 
                 - Calculate your health factor, liquidation price, and max borrowable amount
-             - sDAI Accountant
-                - Calculate your sDAI interest accrual and effective yield
+             - sDAI Calculator
+                - Calculate your effective accrual and effective yield for sDAI
              ''')
     
     st.write("")
