@@ -122,9 +122,6 @@ def home():
         usd_borrow_value = pretty_usd(df,amount_borrow,selected_borrow)
         st.write(usd_borrow_value)
 
-
-    
-
     st.write('')
     cola, colb, colc = st.columns(3)
 
