@@ -110,6 +110,7 @@ def home():
 
     st.title('SparkLend Calculator')
     
+    # title section
     col01, col02 = st.columns([3,1])
     with col01:
         st.caption('A simple calculator to know liquidation price and maximum borrowable amount.')
@@ -123,7 +124,6 @@ def home():
     
     # collateral section
     st.divider()
-    print_state = st.empty()
     colq, colw, cole = st.columns([1,2,1])
     with colw:
         collateral_quantity = st.slider('select number of collaterals',1, 4, 1, 1)
@@ -134,6 +134,7 @@ def home():
     for i in range(collateral_quantity):
         with col1:
             selected_collateral = st.selectbox('select collateral asset', available_collaterals(df,selected_network), key='selected_collateral_' + str(i))
+            
             st.write("|") # needed to keep both columns aligned, good place to add parameters
         with col2:
             amount_collateral = st.number_input('enter collateral amount', value=0.0, step=1.00, format='%.2f', min_value=0.0, key='amount_collateral_' + str(i))
