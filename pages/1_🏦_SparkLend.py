@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import streamlit as st
+import params
 
 #TODO:
 # multi collateral
@@ -28,6 +29,9 @@ st.set_page_config(
 )
 
 # utils
+def get_param(df,selected_network,selected_asset,param):
+    return df[(df['underlying_symbol'] == selected_asset) & (df['network'] == selected_network)][param].unique()[0]
+
 def pretty_percent(percent):
     formatted_string = '{:,.2f}%'.format(percent * 100)
     return formatted_string
@@ -43,8 +47,8 @@ def pretty_number(number):
     except:
         return '{:,.2f}'.format(number)
 
-def usd_price(df,selected_asset):
-    return df[df['underlying_symbol'] == selected_asset]['price'].values[0]
+def usd_price(df,selected_asset,selected_network='ethereum'):
+    return df[(df['underlying_symbol'] == selected_asset) & (df['network'] == selected_network)]['underlying_price'].values[0]
 
 def usd_value(df,selected_amount,selected_asset):
     return usd_price(df,selected_asset) * selected_amount
@@ -135,7 +139,18 @@ def home():
         with col1:
             selected_collateral = st.selectbox('select collateral asset', available_collaterals(df,selected_network), key='selected_collateral_' + str(i))
             
-            st.write("|") # needed to keep both columns aligned, good place to add parameters
+            if get_param(df,selected_network,selected_collateral,params.supply_cap) > 0:
+                supply_headroom = pretty_number(get_param(df,selected_network,selected_collateral,params.supply_cap) - get_param(df,selected_network,selected_collateral,params.total_supply))
+            else:
+                supply_headroom = 'unlimited'
+            
+            st.write(
+                'supply headroom:', supply_headroom, ' | ',
+                'supply rate:', pretty_percent(get_param(df,selected_network,selected_collateral,params.supply_rate)), ' | ',
+                'max ltv:', pretty_percent(get_param(df,selected_network,selected_collateral,params.ltv)), ' | ',
+                'lt:', pretty_percent(get_param(df,selected_network,selected_collateral,params.liquidation_threshold)),
+                )
+
         with col2:
             amount_collateral = st.number_input('enter collateral amount', value=0.0, step=1.00, format='%.2f', min_value=0.0, key='amount_collateral_' + str(i))
             usd_collateral = usd_value(df,amount_collateral,selected_collateral)
@@ -145,13 +160,18 @@ def home():
         st.session_state['collaterals'].update({selected_collateral: amount_collateral})
     for key in st.session_state.keys(): # delete all other items in memory...might lead to issues in the future
         if key != 'collaterals':
-            del st.session_state[key]            
-  
+            del st.session_state[key]
+
     # borrow section
     st.divider()
     col3, col4 = st.columns(2)
     with col3:
         selected_borrow = st.selectbox('select borrow asset', available_borrows(df,selected_network))
+        st.write(
+            'available liquidity:', pretty_number(get_param(df,selected_network,selected_borrow,params.available_liquidity)), ' | ',
+            'borrow rate:', pretty_percent(get_param(df,selected_network,selected_borrow,params.variable_borrow_rate)),
+            )
+
     with col4:
         amount_borrow = st.number_input('enter borrow amount', value=0.0, step=1.00, format='%.2f', min_value=0.0) # %d %e %f %g %i %u
         usd_borrow_value = pretty_usd(usd_value(df,amount_borrow,selected_borrow))
