@@ -85,19 +85,13 @@ def liquidation_price(df,selected_network,collaterals,selected_borrow,amount_bor
     collateral_capacity = 0
     usd_borrow = usd_value(df,amount_borrow,selected_borrow)
     for key in collaterals:
-        st.write(key)
         if key == selected_collateral:
             amount_collateral = collaterals[key]
-            st.write(amount_collateral)
         else:
             amount_collateral = usd_value(df,collaterals[key],key) / usd_value(df,collaterals[selected_collateral],selected_collateral)
-            st.write(amount_collateral)
         collateral_liq_threshold = liquidation_threshold(df,selected_network,key)
-        st.write('collateral_liq_threshold',collateral_liq_threshold)
         liq_factor = amount_collateral * collateral_liq_threshold
-        st.write('liq_factor',liq_factor)
         collateral_capacity += liq_factor
-        st.write('collateral_capacity',collateral_capacity)
     liquidation_price = usd_borrow / collateral_capacity
     return liquidation_price.item()
 
@@ -183,7 +177,6 @@ def home():
         else:
             liq_price_collateral = list(st.session_state['collaterals'].keys())[0]
         liq_price = liquidation_price(df,selected_network,st.session_state['collaterals'],selected_borrow,amount_borrow,liq_price_collateral)
-        st.write('liq_price',liq_price)
         current_price = usd_price(df,liq_price_collateral)
         drawdown = -(current_price - liq_price) / current_price
         delta_text = pretty_percent(drawdown)+' to liquidation'
