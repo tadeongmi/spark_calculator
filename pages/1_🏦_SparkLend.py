@@ -130,7 +130,7 @@ def home():
     # title section
     col01, col02 = st.columns([3,1])
     with col01:
-        st.caption('A simple calculator to know liquidation price and maximum borrowable amount.')
+        st.caption('A simple calculator to know liquidation price and maximum borrowable amount for your position.')
     with col02:
         st.caption('data updated on 19th Dec 2023')
 
@@ -165,13 +165,13 @@ def home():
                 )
 
         with col2:
-            amount_collateral = st.number_input('enter collateral amount', value=0.0, step=1.00, format='%.2f', min_value=0.0, key='amount_collateral_' + str(i))
+            amount_collateral = st.number_input('enter collateral amount', step=1.00, format='%.2f', min_value=0.0, key='amount_collateral_' + str(i))
             usd_collateral = usd_value(df,amount_collateral,selected_collateral)
             usd_collaterals_total += usd_collateral
             st.write(pretty_usd(usd_collateral))
 
         st.session_state['collaterals'].update({selected_collateral: amount_collateral})
-    for key in st.session_state.keys(): # delete all other items in memory...might lead to issues in the future
+    for key in st.session_state.keys(): # delete all other session items, might lead to issues in the future
         if key != 'collaterals':
             del st.session_state[key]
 
@@ -186,7 +186,7 @@ def home():
             )
 
     with col4:
-        amount_borrow = st.number_input('enter borrow amount', value=0.0, step=1.00, format='%.2f', min_value=0.0) # %d %e %f %g %i %u
+        amount_borrow = st.number_input('enter borrow amount', step=1.00, format='%.2f', min_value=0.0) # %d %e %f %g %i %u
         usd_borrow_value = pretty_usd(usd_value(df,amount_borrow,selected_borrow))
         st.write(usd_borrow_value)
 
@@ -198,9 +198,9 @@ def home():
     with colb:
         health_factor = heath_factor(df,selected_network, st.session_state['collaterals'],selected_borrow,amount_borrow)
         if health_factor < 1:
-            st.metric(label='Health Factor', value=pretty_number(health_factor), delta='liquidated', delta_color='inverse')
+            st.metric(label='Health Factor', value=pretty_number(health_factor), delta='liquidated', delta_color='inverse', help='')
         else:
-            st.metric(label='Health Factor', value=pretty_number(health_factor))
+            st.metric(label='Health Factor', value=pretty_number(health_factor), help='')
 
     # liquidation price
     with cola:
@@ -214,14 +214,14 @@ def home():
         drawdown = -(current_price - liq_price) / current_price
         delta_text = pretty_percent(drawdown)+' to liquidation'
         if health_factor < 1:
-            liq_p.metric(label='Liquidation Price', value=pretty_number(liq_price), delta='liquidated', delta_color='inverse')
+            liq_p.metric(label='Liquidation Price', value=pretty_number(liq_price), delta='liquidated', delta_color='inverse', help='inf: infinite liquidation price if collateral going to 0 does not liquidate the position.')
         else:
-            liq_p.metric(label='Liquidation Price', value=pretty_number(liq_price), delta=delta_text, delta_color='off')
+            liq_p.metric(label='Liquidation Price', value=pretty_number(liq_price), delta=delta_text, delta_color='off', help='inf: infinite liquidation price if collateral going to 0 does not liquidate the position.')
 
     # max borrow amount
     with colc:
         max_borrow = max_borrow_amount(df,selected_network,st.session_state['collaterals'],selected_borrow)
-        st.metric(label='Max Borrow Amount', value=pretty_number(max_borrow), help='The max borrowable amount is based on the max LTV rather than the liquidation threshold, creating a buffer to avoid inmediate liquidation.')
+        st.metric(label='Max Borrow Amount', value=pretty_number(max_borrow), help='The max borrowable amount is based on the max LTV rather than the liquidation threshold, creating a buffer betweet it and the amount at inmediate liquidation.')
 
 # app
 if __name__ == '__main__':
