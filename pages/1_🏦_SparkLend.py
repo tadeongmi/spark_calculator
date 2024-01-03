@@ -87,17 +87,30 @@ def heath_factor(df,selected_network,collaterals,selected_borrow,amount_borrow):
 
 def liquidation_price(df,selected_network,collaterals,selected_borrow,amount_borrow,selected_collateral=None):
     collateral_capacity = 0
+    other_usd_collateral_capacity = 0
     usd_borrow = usd_value(df,amount_borrow,selected_borrow)
-    for key in collaterals:
+
+    for key in collaterals: #two concurrent flows to account for collaterals goin 0 without liquidating position
         if key == selected_collateral:
             amount_collateral = collaterals[key]
+            amount_collateral_usd = 0
         else:
-            amount_collateral = usd_value(df,collaterals[key],key) / usd_value(df,collaterals[selected_collateral],selected_collateral)
+            amount_collateral = usd_value(df,collaterals[key],key) / usd_value(df,collaterals[selected_collateral],selected_collateral) #synthetic rate via USD eg. ETH/BTC
+            amount_collateral_usd = usd_value(df,collaterals[key],key)
+
         collateral_liq_threshold = liquidation_threshold(df,selected_network,key)
+
         liq_factor = amount_collateral * collateral_liq_threshold
         collateral_capacity += liq_factor
-    liquidation_price = usd_borrow / collateral_capacity
-    return liquidation_price.item()
+
+        liq_factor_usd = amount_collateral_usd * collateral_liq_threshold
+        other_usd_collateral_capacity += liq_factor_usd
+
+    if other_usd_collateral_capacity > usd_borrow:
+        liquidation_price = float('inf') #even if collateral goes to 0 it does not trigger a liquidation
+    else:
+        liquidation_price = usd_borrow / collateral_capacity
+    return liquidation_price
 
 def max_borrow_amount(df,selected_network,collaterals,selected_borrow):
     collateral_capacity = 0
@@ -177,7 +190,6 @@ def home():
         usd_borrow_value = pretty_usd(usd_value(df,amount_borrow,selected_borrow))
         st.write(usd_borrow_value)
 
-    
     # results section
     st.divider()
     cola, colb, colc = st.columns(3)
@@ -210,9 +222,6 @@ def home():
     with colc:
         max_borrow = max_borrow_amount(df,selected_network,st.session_state['collaterals'],selected_borrow)
         st.metric(label='Max Borrow Amount', value=pretty_number(max_borrow), help='The max borrowable amount is based on the max LTV rather than the liquidation threshold, creating a buffer to avoid inmediate liquidation.')
-
-   
-    #st.write(df)
 
 # app
 if __name__ == '__main__':
