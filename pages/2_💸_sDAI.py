@@ -6,6 +6,7 @@ from wallet_connect import wallet_connect
 # - [ ] get dsr rate from api
 # - [ ] add amounts in sDAI
 # - [ ] add breakeven calculation
+# - [ ] add date range selection
 
 
 st.set_page_config(
@@ -22,6 +23,13 @@ def get_dsr_rate():
     df_dsr['datetime'] = pd.to_datetime(df_dsr['datetime'])
     df_dsr['datetime'] = df_dsr['datetime'].dt.date
     return df_dsr
+
+@st.cache_data
+def get_sdai_wallets():
+    df_sdai_wallets = pd.read_csv('sdai_wallets.csv')
+    df_sdai_wallets['date'] = pd.to_datetime(df_sdai_wallets['date'])
+    df_sdai_wallets['date'] = df_sdai_wallets['date'].dt.date
+    return df_sdai_wallets
 
 def process_user_transactions(df_transactions):
     df_transactions['date'] = pd.to_datetime(df_transactions['date'])
@@ -97,8 +105,11 @@ def main():
         st.write('') # space
         st.write('') # space
         st.write('') # space
-        connect_button = wallet_connect(label="wallet", key="wallet")
-        st.write(connect_button)
+        connect_button = wallet_connect(label="wallet")
+        # st.write(connect_button) # for testing
+        # connect_text = st.text_input('Enter your sDAI wallet address', value=None) # for testing
+        # st.write(connect_text) # for testing
+
 
     if uploaded_sdai is not None:
 
@@ -116,6 +127,29 @@ def main():
 
         except:
             st.warning('there was an error, please try to uploading a valid csv file')
+            success = False
+
+    if len(connect_button) > 5:
+        
+        try:
+            df_transactions = get_sdai_wallets()
+            df_transactions = df_transactions[df_transactions['wallet_address'] == connect_button]
+            df_transactions.drop(columns=['wallet_address'], inplace=True)
+
+            if df_transactions.empty:
+                st.warning('the wallet address has no sDAI transactions')
+                success = False
+            else:
+                try:
+                    date_column = df_transactions['date']
+                    amount_column = df_transactions['amount']
+                    st.success('the wallet transactions have been successfully retrieved')
+                    success = True
+                except:
+                    st.warning('there was an error reading the wallet transactions, please try again')
+                    success = False
+        except:
+            st.warning('there was an error with wallet connect, please try again')
             success = False
 
     if success is True:
@@ -153,7 +187,7 @@ def main():
         st.write('') # space
         cola, colb = st.columns([1,1])
         with cola:
-            st.download_button('Download your sDAI calculations', data=df_transactions.to_csv(index=None), file_name='sdai_yield.csv', mime='text/csv')
+            st.download_button('Download your sDAI calculations', data=df_merged.to_csv(index=None), file_name='sdai_yield.csv', mime='text/csv')
         with colb:    
             st.download_button('Download historical DSR APY', data=df_dsr.to_csv(), file_name='pot_dsr.csv', mime='text/csv')
     
