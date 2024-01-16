@@ -167,12 +167,12 @@ def main():
 
         final_df = st.empty()
         
-        weighted_average_balance = (df_merged['balance'] * df_merged['rate']).sum() / df_merged['rate'].sum()
+        average_balance = df_merged['balance'].mean()
         weighted_average_yield = (df_merged['balance'] * df_merged['rate']).sum() / df_merged['balance'].sum()
         weighted_average_rate = (1 + weighted_average_yield / 31536000) ** 31536000 - 1
         # weighted_average_rate = 
         total_return = df_merged['return'].sum()
-        total_percent_return = total_return / weighted_average_balance
+        total_percent_return = total_return / average_balance
 
         col01, col02, col03, col04 = st.columns([1,1,1,1])
         with col01:
