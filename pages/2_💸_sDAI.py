@@ -105,7 +105,7 @@ def main():
         st.write('') # space
         st.write('') # space
         st.write('') # space
-        connect_button = wallet_connect(label="wallet")
+        connect_button = wallet_connect(label="wallet",key="wallet")
         # st.write(connect_button) # for testing
         # connect_text = st.text_input('Enter your sDAI wallet address', value=None) # for testing
         # st.write(connect_text) # for testing
