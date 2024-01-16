@@ -1,8 +1,8 @@
 import streamlit as st
 import pandas as pd
+from wallet_connect import wallet_connect
 
 # TODO:
-# - [ ] add a file uploader for common file formats (maybe Safe or Etherscan?)
 # - [ ] get dsr rate from api
 # - [ ] add amounts in sDAI
 # - [ ] add breakeven calculation
@@ -69,19 +69,36 @@ def pretty_dai(number):
 # frontend
 def main():
     st.title('💸 sDAI Calculator 💸')
-    
-    col01, col02 = st.columns([3,1])
-    with col01:
+
+    col1, col2 = st.columns([3,1])
+    with col1:
         st.caption('A simple calculator to know the effective yield of your sDAI.')
 
-    with col02:
+    with col2:
         st.caption('data updated on 19th Dec 2023')
 
     st.write('') # space
     success = False # control flow for the bulk of calculations
 
-    # get data
-    uploaded_sdai = st.file_uploader('Upload your sDAI transactions', type=['csv'])
+    # get 
+    col3, col4, col5, col6 = st.columns([3,1,2,1])
+    with col3:
+        uploaded_sdai = st.file_uploader('Upload your sDAI transactions', type=['csv'])
+        st.caption('Upload a CSV file with 2 columns, date (yyyy-mm-dd) and amount (DAI amount w/ decimal point, negative when exiting sDAI).')
+        with open('example_sdai.csv') as f:
+            st.download_button('Download sample sDAI transactions', f, file_name='sample_sdai.csv', mime='text/csv')
+    with col4:
+        st.write('') # space
+    with col5:
+        st.write('') # space
+        st.title('  or')
+
+    with col6:
+        st.write('') # space
+        st.write('') # space
+        st.write('') # space
+        connect_button = wallet_connect(label="wallet", key="wallet")
+        st.write(connect_button)
 
     if uploaded_sdai is not None:
 
@@ -100,10 +117,6 @@ def main():
         except:
             st.warning('there was an error, please try to uploading a valid csv file')
             success = False
-    
-    st.caption('Upload a CSV file with 2 columns, date (yyyy-mm-dd) and amount (DAI amount w/ decimal point, negative when exiting sDAI).')
-    with open('example_sdai.csv') as f:
-        st.download_button('Download sample sDAI transactions', f, file_name='sample_sdai.csv', mime='text/csv')
 
     if success is True:
         df_dsr = get_dsr_rate()

@@ -956,6 +956,20 @@ watchdog = {version = ">=2.1.5", markers = "platform_system != \"Darwin\""}
 snowflake = ["snowflake-connector-python (>=2.8.0)", "snowflake-snowpark-python (>=0.9.0)"]
 
 [[package]]
+name = "streamlit-wallet-connect"
+version = "0.1.0"
+description = "A Streamlit component for interacting with Web3."
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "streamlit-wallet-connect-0.1.0.tar.gz", hash = "sha256:6c98ed2a24d71fdbfc79443cab42590db211726b5ce5739f72a865197bdd9c91"},
+    {file = "streamlit_wallet_connect-0.1.0-py3-none-any.whl", hash = "sha256:455437eece21be793a7c2cb8d578465c9cab363bde8c041a69a825ea756de274"},
+]
+
+[package.dependencies]
+streamlit = ">=0.63"
+
+[[package]]
 name = "tenacity"
 version = "8.2.3"
 description = "Retry code until it succeeds"
@@ -1145,4 +1159,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "650252aeaa9796314a455fc1b64ad89bc892b7490f33269b2d8804d165bef91a"
+content-hash = "ca93fb05bc64e7814cf9d2568782c72934643c7433e2611b0816723ac73e3a24"
