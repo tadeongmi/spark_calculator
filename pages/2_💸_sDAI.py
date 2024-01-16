@@ -3,10 +3,10 @@ import pandas as pd
 from wallet_connect import wallet_connect
 
 # TODO:
-# - [ ] get dsr rate from api
+# - [ ] create cron job for data refresh
+# - [ ] get data from api
 # - [ ] add amounts in sDAI
 # - [ ] add breakeven calculation
-# - [ ] add date range selection
 
 
 st.set_page_config(
@@ -106,9 +106,9 @@ def main():
         st.write('') # space
         st.write('') # space
         connect_button = wallet_connect(label="wallet",key="wallet")
+
+        # connect_button = st.text_input('Enter your sDAI wallet address', value=None) # for testing
         # st.write(connect_button) # for testing
-        # connect_text = st.text_input('Enter your sDAI wallet address', value=None) # for testing
-        # st.write(connect_text) # for testing
 
 
     if uploaded_sdai is not None:
@@ -161,25 +161,34 @@ def main():
 
         st.write('') # space
         st.header('your sDAI yield')
+        
+        date_range = st.date_input('select a date range', value=[df_merged['date'].min(), df_merged['date'].max()])
+        df_merged = df_merged[(df_merged['date'] >= date_range[0]) & (df_merged['date'] <= date_range[1])]
+
         final_df = st.empty()
+        
+        weighted_average_balance = (df_merged['balance'] * df_merged['rate']).sum() / df_merged['rate'].sum()
+        weighted_average_yield = (df_merged['balance'] * df_merged['rate']).sum() / df_merged['balance'].sum()
+        weighted_average_rate = (1 + weighted_average_yield / 31536000) ** 31536000 - 1
+        # weighted_average_rate = 
+        total_return = df_merged['return'].sum()
+        total_percent_return = total_return / weighted_average_balance
 
-        weighted_average_rate = (df_merged['balance'] * df_merged['rate']).sum() / df_merged['balance'].sum()
-        weighted_average_APY = (1 + weighted_average_rate / 31536000) ** 31536000 - 1
-
-        col01, col02, col03 = st.columns([1,1,1])
+        col01, col02, col03, col04 = st.columns([1,1,1,1])
         with col01:
-            total_return = df_merged['return'].sum()
             st.metric(label='effective return', value=pretty_dai(total_return))
         with col02:
-            st.metric(label='effective APR', value=pretty_percent(weighted_average_rate))
+            st.metric(label='effective percent return', value=pretty_percent(total_percent_return))
         with col03:
-            st.metric(label='effective APY', value=pretty_percent(weighted_average_APY))
+            st.metric(label='annual percentage yield (APY)', value=pretty_percent(weighted_average_rate))
+        with col04:
+            st.metric(label='annual percentage rate (APR)', value=pretty_percent(weighted_average_yield))
 
         with final_df.container():
             df_merged.rename(columns={'balance':'DAI nominal balance',
                                     'rate':'APY',
-                                    'apr':'daily APR',
-                                    'return':'daily return',
+                                    'apr':'percent return',
+                                    'return':'return',
                                     }, 
                             inplace=True)
             st.write(df_merged)
