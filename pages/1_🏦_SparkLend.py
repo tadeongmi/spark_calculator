@@ -158,7 +158,7 @@ def home():
                 supply_headroom = 'unlimited'
             
             st.write(
-                'supply headroom:', supply_headroom, ' | ',
+                'available capacity:', supply_headroom, ' | ',
                 'supply rate:', pretty_percent(get_param(df,selected_network,selected_collateral,params.supply_rate)), ' | ',
                 'max ltv:', pretty_percent(get_param(df,selected_network,selected_collateral,params.ltv)), ' | ',
                 'lt:', pretty_percent(get_param(df,selected_network,selected_collateral,params.liquidation_threshold)),
