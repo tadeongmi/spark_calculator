@@ -89,7 +89,7 @@ def main():
     success = False # control flow for the bulk of calculations
 
     # get 
-    col3, col4, col5, col6 = st.columns([3,1,2,1])
+    col3, col4, col5, col6 = st.columns([3,1,2,2])
     with col3:
         uploaded_sdai = st.file_uploader('Upload your sDAI transactions', type=['csv'])
         st.caption('Upload a CSV file with 2 columns, date (yyyy-mm-dd) and amount (DAI amount w/ decimal point, negative when exiting sDAI).')
@@ -100,16 +100,14 @@ def main():
     with col5:
         st.write('') # space
         st.title('  or')
-
     with col6:
-        st.write('') # space
-        st.write('') # space
-        st.write('') # space
         connect_button = wallet_connect(label="wallet",key="wallet")
+        st.write('or') # space
+        input_wallet = st.text_input('Enter your wallet address', value=None)
 
-        # connect_button = st.text_input('Enter your sDAI wallet address', value=None) # for testing
-        # st.write(connect_button) # for testing
-
+    st.write('') # space
+    status_update = st.empty()
+    st.divider()
 
     if uploaded_sdai is not None:
 
@@ -129,27 +127,31 @@ def main():
             st.warning('there was an error, please try to uploading a valid csv file')
             success = False
 
-    if len(connect_button) > 5:
+    if len(connect_button) > 5 or input_wallet is not None:
+        if len(connect_button) > 5:
+            wallet_address = connect_button
+        else:
+            wallet_address = input_wallet
         
         try:
             df_transactions = get_sdai_wallets()
-            df_transactions = df_transactions[df_transactions['wallet_address'] == connect_button]
+            df_transactions = df_transactions[df_transactions['wallet_address'] == wallet_address]
             df_transactions.drop(columns=['wallet_address'], inplace=True)
 
             if df_transactions.empty:
-                st.warning('the wallet address has no sDAI transactions')
+                status_update.warning('the wallet address has no sDAI transactions')
                 success = False
             else:
                 try:
                     date_column = df_transactions['date']
                     amount_column = df_transactions['amount']
-                    st.success('the wallet transactions have been successfully retrieved')
+                    status_update.success('the wallet transactions have been successfully retrieved')
                     success = True
                 except:
-                    st.warning('there was an error reading the wallet transactions, please try again')
+                    status_update.warning('there was an error reading the wallet transactions, please try again')
                     success = False
         except:
-            st.warning('there was an error with wallet connect, please try again')
+            status_update = st.warning('there was an error with wallet connect, please try again')
             success = False
 
     if success is True:
