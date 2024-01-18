@@ -88,7 +88,6 @@ def main():
     st.write('') # space
     success = False # control flow for the bulk of calculations
 
-    # get 
     col3, col4, col5, col6 = st.columns([3,1,2,2])
     with col3:
         uploaded_sdai = st.file_uploader('Upload your sDAI transactions', type=['csv'])
@@ -160,9 +159,6 @@ def main():
         # process data
         df_daily = process_user_transactions(df_transactions)
         df_merged = calculate_return(df_daily, df_dsr)
-
-        st.write('') # space
-        st.header('your sDAI yield')
         
         date_range = st.date_input('select a date range', value=[df_merged['date'].min(), df_merged['date'].max()])
         df_merged = df_merged[(df_merged['date'] >= date_range[0]) & (df_merged['date'] <= date_range[1])]
@@ -201,7 +197,6 @@ def main():
             st.download_button('Download your sDAI calculations', data=df_merged.to_csv(index=None), file_name='sdai_yield.csv', mime='text/csv')
         with colb:    
             st.download_button('Download historical DSR APY', data=df_dsr.to_csv(), file_name='pot_dsr.csv', mime='text/csv')
-    
     else:
         st.write('')
 
