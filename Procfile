@@ -1,1 +1,1 @@
-web: streamlit run 0_⚡️_Welcome_to_Sparkie.py
+web: sh setup.sh && streamlit run 0_⚡️_Welcome_to_Sparkie.py
