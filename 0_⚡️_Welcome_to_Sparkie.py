@@ -20,7 +20,7 @@ def app():
              ''')
     
     st.write("")
-    st.write('Made by Phoenix Labs with beautiful data from BlockAnalitica')
+    st.write('Made by Phoenix Labs with data from BlockAnalitica')
 
     
 if __name__ == "__main__":
