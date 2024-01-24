@@ -121,29 +121,28 @@ def main():
             except:
                 st.warning('the csv file does not contain the correct format, please try using the sample file provided below.')
                 success = False
-
         except:
             st.warning('there was an error, please try to uploading a valid csv file')
             success = False
 
     if len(connect_button) > 5 or input_wallet is not None:
         if len(connect_button) > 5:
-            wallet_address = connect_button
+            wallet_address = str(connect_button).strip().lower()
         else:
-            wallet_address = input_wallet
-        
+            wallet_address = str(input_wallet).strip().lower()
         try:
             df_transactions = get_sdai_wallets()
-            df_transactions = df_transactions[df_transactions['wallet_address'] == wallet_address]
-            df_transactions.drop(columns=['wallet_address'], inplace=True)
+            df_transactions['wallet_address'] = df_transactions['wallet_address'].astype(str).str.strip().str.lower()
+            df_tx_user = df_transactions[df_transactions['wallet_address'] == wallet_address]
+            df_tx_user.drop(columns=['wallet_address'], inplace=True)
 
-            if df_transactions.empty:
+            if df_tx_user.empty:
                 status_update.warning('the wallet address has no sDAI transactions')
                 success = False
             else:
                 try:
-                    date_column = df_transactions['date']
-                    amount_column = df_transactions['amount']
+                    date_column = df_tx_user['date']
+                    amount_column = df_tx_user['amount']
                     status_update.success('the wallet transactions have been successfully retrieved')
                     success = True
                 except:
@@ -157,7 +156,7 @@ def main():
         df_dsr = get_dsr_rate()
 
         # process data
-        df_daily = process_user_transactions(df_transactions)
+        df_daily = process_user_transactions(df_tx_user)
         df_merged = calculate_return(df_daily, df_dsr)
         
         date_range = st.date_input('select a date range', value=[df_merged['date'].min(), df_merged['date'].max()])
@@ -168,7 +167,6 @@ def main():
         average_balance = df_merged['balance'].mean()
         weighted_average_yield = (df_merged['balance'] * df_merged['rate']).sum() / df_merged['balance'].sum()
         weighted_average_rate = (1 + weighted_average_yield / 31536000) ** 31536000 - 1
-        # weighted_average_rate = 
         total_return = df_merged['return'].sum()
         total_percent_return = total_return / average_balance
 
