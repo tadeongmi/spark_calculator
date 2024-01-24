@@ -4,7 +4,6 @@ import streamlit as st
 import params
 
 #TODO:
-# multi collateral
 # - validation of unselected collateral
 # - button add collateral
 # - borrow asset price variable
@@ -19,6 +18,9 @@ import params
 # use cases(lending arbitrage w/ expected breakeven, long/short/token farming, for looping need "x5" instead of max ltv)
 # add sdai yield
 # number input field empty rather than 0.00
+
+# emode
+# DAI cannot be collateral
 
 # Set page configuration
 st.set_page_config(
@@ -67,7 +69,8 @@ def available_markets(df):
     return df['network'].unique()
 
 def available_collaterals(df,network):
-    return df[(df['usage_as_collateral_enabled'] == True) & (df['network'] == network)]['underlying_symbol'].unique()
+    available_collaterals = df[ (df['usage_as_collateral_enabled'] == True) & (df['network'] == network) & (df['underlying_symbol'] != 'DAI')]['underlying_symbol'].unique()
+    return available_collaterals
 
 def available_borrows(df,network):
     return df[(df['borrowing_enabled'] == True) & (df['network'] == network)]['underlying_symbol'].unique()
@@ -124,9 +127,8 @@ def max_borrow_amount(df,selected_network,collaterals,selected_borrow):
 # frontend
 def home():
     df = get_market_data()
-
+    st.write(df)
     st.title('SparkLend Calculator')
-    
     # title section
     col01, col02 = st.columns([3,1])
     with col01:
