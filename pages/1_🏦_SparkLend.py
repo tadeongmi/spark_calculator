@@ -18,9 +18,7 @@ import params
 # use cases(lending arbitrage w/ expected breakeven, long/short/token farming, for looping need "x5" instead of max ltv)
 # add sdai yield
 # number input field empty rather than 0.00
-
-# emode
-# DAI cannot be collateral
+# clean up assets/markets table (category, name -> emode_name)
 
 # Set page configuration
 st.set_page_config(
@@ -60,7 +58,7 @@ def pretty_usd(usd_value):
     return formatted_string
 
 # backend
-@st.cache_data
+# @st.cache_data
 def get_market_data():
     df = pd.read_csv('assets.csv')
     return df
@@ -69,11 +67,12 @@ def available_markets(df):
     return df['network'].unique()
 
 def available_collaterals(df,network):
-    available_collaterals = df[ (df['usage_as_collateral_enabled'] == True) & (df['network'] == network) & (df['underlying_symbol'] != 'DAI')]['underlying_symbol'].unique()
+    available_collaterals = df[ (df['usage_as_collateral_enabled'] == True) & (df['network'] == network) & (df['underlying_symbol'] != 'GNO') ][['underlying_symbol','emode_category']] #GNO should be removed based on market data
     return available_collaterals
 
-def available_borrows(df,network):
-    return df[(df['borrowing_enabled'] == True) & (df['network'] == network)]['underlying_symbol'].unique()
+def available_borrows(df,network,emode_category):
+    available_borrows = df[(df['borrowing_enabled'] == True) & (df['network'] == network) & (df['emode_category'] == emode_category)]['underlying_symbol'].unique()
+    return available_borrows
 
 def liquidation_threshold(df,selected_network,selected_collateral):
     return df[(df['underlying_symbol'] == selected_collateral) & (df['network'] == selected_network)]['liquidation_threshold'].unique()[0]
@@ -143,16 +142,37 @@ def home():
     
     # collateral section
     st.divider()
-    colq, colw, cole = st.columns([1,2,1])
-    with colw:
+    colq, colw, cole = st.columns([2,1,2])
+    with colq:
         collateral_quantity = st.slider('select number of collaterals',1, 4, 1, 1)
+    with cole:
+        emodes = {
+            'none': '',
+            'ETH': 1,
+            'USD': 2,
+        }
+        selected_emode = st.radio('select emode', list(emodes.keys()), horizontal=True)
+
+    # define collaterals available to user
+    collaterals_available = available_collaterals(df,selected_network)
+    collaterals_available['emode_category'] = collaterals_available['emode_category'].astype(int)
+    if selected_emode == 'none':
+        st.write(collaterals_available)
+    elif selected_emode == 'ETH':
+        st.write(emodes[selected_emode])
+        collaterals_available = collaterals_available[collaterals_available['emode_category'] == emodes[selected_emode]]['underlying_symbol']
+        st.write(collaterals_available)
+    elif selected_emode == 'USD':
+        st.write(emodes[selected_emode])
+        collaterals_available = collaterals_available[collaterals_available['emode_category'] == emodes[selected_emode]]['underlying_symbol']
+        st.write(collaterals_available)
 
     col1, col2 = st.columns(2)
     usd_collaterals_total = 0
     st.session_state['collaterals'] = {}
     for i in range(collateral_quantity):
         with col1:
-            selected_collateral = st.selectbox('select collateral asset', available_collaterals(df,selected_network), key='selected_collateral_' + str(i))
+            selected_collateral = st.selectbox('select collateral asset', collaterals_available, key='selected_collateral_' + str(i))
             
             if get_param(df,selected_network,selected_collateral,params.supply_cap) > 0:
                 supply_headroom = pretty_number(get_param(df,selected_network,selected_collateral,params.supply_cap) - get_param(df,selected_network,selected_collateral,params.total_supply))
@@ -181,11 +201,12 @@ def home():
     st.divider()
     col3, col4 = st.columns(2)
     with col3:
-        selected_borrow = st.selectbox('select borrow asset', available_borrows(df,selected_network))
+        selected_borrow = st.selectbox('select borrow asset', available_borrows(df,selected_network,emodes[selected_emode]))
         st.write(
             'available liquidity:', pretty_number(get_param(df,selected_network,selected_borrow,params.available_liquidity)), ' | ',
             'borrow rate:', pretty_percent(get_param(df,selected_network,selected_borrow,params.variable_borrow_rate)),
             )
+        st.write(available_borrows(df,selected_network,emodes[selected_emode]))
 
     with col4:
         amount_borrow = st.number_input('enter borrow amount', step=1.00, format='%.2f', min_value=0.0) # %d %e %f %g %i %u
