@@ -7,11 +7,6 @@ import params
 # - validation of unselected collateral
 # - button add collateral
 # - borrow asset price variable
-#  - current version does not support ETH-stETH liquidation price
-# - collateral select for liquidation price
-#     - calculate liq. price based on selected collateral
-#       - current version does a proportional price impact rather than taking the full hit amount (1M in BTC, 2k in ETH, 1k borrow, ETH should be able to go to 0 w/o impact) 
-
 # collateral needed (vs max borrow)
 # simulation (e.g. if you opened the position last month, would you have been liquidatied?)
 # fee (need to also add loan duration)
@@ -152,7 +147,7 @@ def home():
     with col01:
         st.caption('A simple calculator to know liquidation price and maximum borrowable amount for your position.')
     with col02:
-        st.caption('data updated on 19th Dec 2023')
+        st.caption('data updated on 25th Jan 2024')
 
     st.write("") # space
 
