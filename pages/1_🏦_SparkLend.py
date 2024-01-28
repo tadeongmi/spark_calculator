@@ -19,6 +19,7 @@ import params
 # add sdai yield
 # number input field empty rather than 0.00
 # clean up assets/markets table (category, name -> emode_name)
+# validate selected_collateral so that you cannot choose it twice, nor choose it as a borrow asset
 
 # Set page configuration
 st.set_page_config(
@@ -30,7 +31,19 @@ st.set_page_config(
 
 # utils
 def get_param(df,selected_network,selected_asset,param):
-    return df[(df['underlying_symbol'] == selected_asset) & (df['network'] == selected_network)][param].unique()[0]
+    return df[(df['underlying_symbol'] == selected_asset) & (df['network'] == selected_network)][param].unique()[0]    
+
+def get_ltv(df,selected_network,selected_asset,emode):
+    if emode == None:
+        return df[(df['underlying_symbol'] == selected_asset) & (df['network'] == selected_network)]['ltv'].unique()[0]    
+    else:
+        return df[(df['underlying_symbol'] == selected_asset) & (df['network'] == selected_network)]['ltv_emode'].unique()[0]    
+
+def get_lt(df,selected_network,selected_asset,emode):
+    if emode == None:
+        return df[(df['underlying_symbol'] == selected_asset) & (df['network'] == selected_network)]['liquidation_threshold'].unique()[0]    
+    else:
+        return df[(df['underlying_symbol'] == selected_asset) & (df['network'] == selected_network)]['liquidation_threshold_emode'].unique()[0]    
 
 def pretty_percent(percent):
     formatted_string = '{:,.2f}%'.format(percent * 100)
@@ -70,24 +83,31 @@ def available_collaterals(df,network):
     available_collaterals = df[ (df['usage_as_collateral_enabled'] == True) & (df['network'] == network) & (df['underlying_symbol'] != 'GNO') ][['underlying_symbol','emode_category']] #GNO should be removed based on market data
     return available_collaterals
 
-def available_borrows(df,network,emode_category):
-    available_borrows = df[(df['borrowing_enabled'] == True) & (df['network'] == network) & (df['emode_category'] == emode_category)]['underlying_symbol'].unique()
+def available_borrows(df,network,emode):
+    if emode == None:
+        available_borrows = df[(df['borrowing_enabled'] == True) & (df['network'] == network) ]['underlying_symbol'].unique()
+    # & (df[~df['underlying_symbol'].isin(st.session_state['collaterals'])])
+    else:
+        available_borrows = df[(df['borrowing_enabled'] == True) & (df['network'] == network) & (df['emode_category'] == emode)]['underlying_symbol'].unique()
     return available_borrows
 
-def liquidation_threshold(df,selected_network,selected_collateral):
-    return df[(df['underlying_symbol'] == selected_collateral) & (df['network'] == selected_network)]['liquidation_threshold'].unique()[0]
+def liquidation_threshold(df,selected_network,selected_collateral,emode):
+    if emode == None:
+        return df[(df['underlying_symbol'] == selected_collateral) & (df['network'] == selected_network)]['liquidation_threshold'].unique()[0]
+    else:
+        return df[(df['underlying_symbol'] == selected_collateral) & (df['network'] == selected_network)]['liquidation_threshold_emode'].unique()[0]
 
-def heath_factor(df,selected_network,collaterals,selected_borrow,amount_borrow):
+def heath_factor(df,selected_network,collaterals,selected_borrow,amount_borrow,emode):
     usd_borrow = usd_value(df,amount_borrow,selected_borrow)
     collateral_capacity = 0
     for key in collaterals:
         usd_collateral = usd_value(df,collaterals[key],key)
-        collateral_liq_threshold = liquidation_threshold(df,selected_network,key)
+        collateral_liq_threshold = liquidation_threshold(df,selected_network,key,emode)
         collateral_capacity += (usd_collateral * collateral_liq_threshold)
     health_factor = collateral_capacity / usd_borrow
     return health_factor.item()
 
-def liquidation_price(df,selected_network,collaterals,selected_borrow,amount_borrow,selected_collateral=None):
+def liquidation_price(df,selected_network,collaterals,selected_borrow,amount_borrow,selected_collateral=None,emode_category=None):
     collateral_capacity = 0
     other_usd_collateral_capacity = 0
     usd_borrow = usd_value(df,amount_borrow,selected_borrow)
@@ -100,7 +120,7 @@ def liquidation_price(df,selected_network,collaterals,selected_borrow,amount_bor
             amount_collateral = usd_value(df,collaterals[key],key) / usd_value(df,collaterals[selected_collateral],selected_collateral) #synthetic rate via USD eg. ETH/BTC
             amount_collateral_usd = usd_value(df,collaterals[key],key)
 
-        collateral_liq_threshold = liquidation_threshold(df,selected_network,key)
+        collateral_liq_threshold = liquidation_threshold(df,selected_network,key,emode_category)
 
         liq_factor = amount_collateral * collateral_liq_threshold
         collateral_capacity += liq_factor
@@ -114,11 +134,11 @@ def liquidation_price(df,selected_network,collaterals,selected_borrow,amount_bor
         liquidation_price = usd_borrow / collateral_capacity
     return liquidation_price
 
-def max_borrow_amount(df,selected_network,collaterals,selected_borrow):
+def max_borrow_amount(df,selected_network,collaterals,selected_borrow,emode):
     collateral_capacity = 0
     for key in collaterals:
         usd_collateral = usd_value(df,collaterals[key],key)
-        max_ltv = df[(df['underlying_symbol'] == key) & (df['network'] == selected_network)]['ltv'].unique()
+        max_ltv = get_ltv(df,selected_network,key,emode)
         collateral_capacity += (usd_collateral * max_ltv)
     max_borrow = collateral_capacity / usd_price(df,selected_borrow)
     return max_borrow.item()
@@ -126,7 +146,6 @@ def max_borrow_amount(df,selected_network,collaterals,selected_borrow):
 # frontend
 def home():
     df = get_market_data()
-    st.write(df)
     st.title('SparkLend Calculator')
     # title section
     col01, col02 = st.columns([3,1])
@@ -147,7 +166,7 @@ def home():
         collateral_quantity = st.slider('select number of collaterals',1, 4, 1, 1)
     with cole:
         emodes = {
-            'none': '',
+            'none': None,
             'ETH': 1,
             'USD': 2,
         }
@@ -157,15 +176,11 @@ def home():
     collaterals_available = available_collaterals(df,selected_network)
     collaterals_available['emode_category'] = collaterals_available['emode_category'].astype(int)
     if selected_emode == 'none':
-        st.write(collaterals_available)
+        pass
     elif selected_emode == 'ETH':
-        st.write(emodes[selected_emode])
         collaterals_available = collaterals_available[collaterals_available['emode_category'] == emodes[selected_emode]]['underlying_symbol']
-        st.write(collaterals_available)
     elif selected_emode == 'USD':
-        st.write(emodes[selected_emode])
         collaterals_available = collaterals_available[collaterals_available['emode_category'] == emodes[selected_emode]]['underlying_symbol']
-        st.write(collaterals_available)
 
     col1, col2 = st.columns(2)
     usd_collaterals_total = 0
@@ -175,6 +190,7 @@ def home():
             selected_collateral = st.selectbox('select collateral asset', collaterals_available, key='selected_collateral_' + str(i))
             
             if get_param(df,selected_network,selected_collateral,params.supply_cap) > 0:
+
                 supply_headroom = pretty_number(get_param(df,selected_network,selected_collateral,params.supply_cap) - get_param(df,selected_network,selected_collateral,params.total_supply))
             else:
                 supply_headroom = 'unlimited'
@@ -182,8 +198,8 @@ def home():
             st.write(
                 'available capacity:', supply_headroom, ' | ',
                 'supply rate:', pretty_percent(get_param(df,selected_network,selected_collateral,params.supply_rate)), ' | ',
-                'max ltv:', pretty_percent(get_param(df,selected_network,selected_collateral,params.ltv)), ' | ',
-                'lt:', pretty_percent(get_param(df,selected_network,selected_collateral,params.liquidation_threshold)),
+                'max ltv:', pretty_percent(get_ltv(df,selected_network,selected_collateral,emodes[selected_emode])), ' | ',
+                'lt:', pretty_percent(get_lt(df,selected_network,selected_collateral,emodes[selected_emode])),
                 )
 
         with col2:
@@ -193,7 +209,9 @@ def home():
             st.write(pretty_usd(usd_collateral))
 
         st.session_state['collaterals'].update({selected_collateral: amount_collateral})
-    for key in st.session_state.keys(): # delete all other session items, might lead to issues in the future
+
+    for key in st.session_state.keys():
+        print(key) # delete all other session items, might lead to issues in the future
         if key != 'collaterals':
             del st.session_state[key]
 
@@ -206,7 +224,6 @@ def home():
             'available liquidity:', pretty_number(get_param(df,selected_network,selected_borrow,params.available_liquidity)), ' | ',
             'borrow rate:', pretty_percent(get_param(df,selected_network,selected_borrow,params.variable_borrow_rate)),
             )
-        st.write(available_borrows(df,selected_network,emodes[selected_emode]))
 
     with col4:
         amount_borrow = st.number_input('enter borrow amount', step=1.00, format='%.2f', min_value=0.0) # %d %e %f %g %i %u
@@ -219,7 +236,7 @@ def home():
 
     # health factor
     with colb:
-        health_factor = heath_factor(df,selected_network, st.session_state['collaterals'],selected_borrow,amount_borrow)
+        health_factor = heath_factor(df,selected_network, st.session_state['collaterals'],selected_borrow,amount_borrow,selected_emode)
         if health_factor < 1:
             st.metric(label='Health Factor', value=pretty_number(health_factor), delta='liquidated', delta_color='inverse', help='')
         else:
@@ -243,7 +260,7 @@ def home():
 
     # max borrow amount
     with colc:
-        max_borrow = max_borrow_amount(df,selected_network,st.session_state['collaterals'],selected_borrow)
+        max_borrow = max_borrow_amount(df,selected_network,st.session_state['collaterals'],selected_borrow,emodes[selected_emode])
         st.metric(label='Max Borrow Amount', value=pretty_number(max_borrow), help='The max borrowable amount is based on the max LTV rather than the liquidation threshold, creating a buffer betweet it and the amount at inmediate liquidation.')
 
 # app
