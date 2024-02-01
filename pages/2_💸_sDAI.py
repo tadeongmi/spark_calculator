@@ -17,19 +17,19 @@ st.set_page_config(
 )
 
 # backend
+def read_csv_and_convert_date(filename, date_column):
+    df = pd.read_csv(filename)
+    df[date_column] = pd.to_datetime(df[date_column])
+    df[date_column] = df[date_column].dt.date
+    return df
+
 @st.cache_data
 def get_dsr_rate():
-    df_dsr = pd.read_csv('pot_dsr.csv')
-    df_dsr['datetime'] = pd.to_datetime(df_dsr['datetime'])
-    df_dsr['datetime'] = df_dsr['datetime'].dt.date
-    return df_dsr
+    return read_csv_and_convert_date('pot_dsr.csv', 'datetime')
 
 @st.cache_data
 def get_sdai_wallets():
-    df_sdai_wallets = pd.read_csv('sdai_wallets.csv')
-    df_sdai_wallets['date'] = pd.to_datetime(df_sdai_wallets['date'])
-    df_sdai_wallets['date'] = df_sdai_wallets['date'].dt.date
-    return df_sdai_wallets
+    return read_csv_and_convert_date('sdai_wallets.csv', 'date')
 
 def process_user_transactions(df_transactions):
     df_transactions['date'] = pd.to_datetime(df_transactions['date'])
@@ -111,11 +111,11 @@ def main():
     if uploaded_sdai is not None:
 
         try:
-            df_transactions = pd.read_csv(uploaded_sdai)
+            df_tx_user = pd.read_csv(uploaded_sdai)
 
             try:
-                date_column = df_transactions['date']
-                amount_column = df_transactions['amount']
+                date_column = df_tx_user['date']
+                amount_column = df_tx_user['amount']
                 st.success('the csv file has been processed correctly')
                 success = True
             except:
@@ -130,6 +130,7 @@ def main():
             wallet_address = str(connect_button).strip().lower()
         else:
             wallet_address = str(input_wallet).strip().lower()
+
         try:
             df_transactions = get_sdai_wallets()
             df_transactions['wallet_address'] = df_transactions['wallet_address'].astype(str).str.strip().str.lower()
